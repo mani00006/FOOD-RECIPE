@@ -1,176 +1,214 @@
-const recipes = {
-    italian: [
-        {
-            id: 1,
-            name: "Spaghetti Carbonara",
-            time: 30,
-            difficulty: "Medium",
-            servings: 2,
-            ingredients: [
-                "200g spaghetti",
-                "100g pancetta or guanciale, diced",
-                "2 large eggs",
-                "50g Pecorino Romano cheese, grated",
-                "50g Parmesan cheese, grated",
-                "2 cloves garlic, minced",
-                "Salt and black pepper to taste"
-            ],
-            instructions: [
-                "Bring a large pot of salted water to a boil and cook spaghetti according to package instructions.",
-                "In a large skillet, cook pancetta over medium heat until crispy, about 5 minutes.",
-                "In a bowl, whisk together eggs, grated cheeses, and black pepper.",
-                "Drain pasta, reserving 1/2 cup of pasta water.",
-                "Add pasta to the skillet with pancetta, toss to combine.",
-                "Remove from heat and quickly stir in the egg mixture, adding pasta water as needed to create a creamy sauce.",
-                "Serve immediately with extra grated cheese and black pepper."
-            ]
-        },
-        // Add 9 more Italian recipes here
-    ],
-    mexican: [
-        {
-            id: 1,
-            name: "Quick Chicken Quesadillas",
-            time: 20,
-            difficulty: "Easy",
-            servings: 2,
-            ingredients: [
-                "2 large flour tortillas",
-                "200g cooked chicken, shredded",
-                "1 cup shredded cheddar cheese",
-                "1/4 cup chopped onion",
-                "1/4 cup chopped bell pepper",
-                "2 tbsp vegetable oil",
-                "Salsa and sour cream for serving"
-            ],
-            instructions: [
-                "Heat 1 tbsp oil in a large skillet over medium heat.",
-                "Add onion and bell pepper, cook until softened, about 3 minutes.",
-                "Place one tortilla in the skillet, sprinkle half with cheese.",
-                "Add chicken, cooked vegetables, and more cheese on top.",
-                "Fold the tortilla in half and cook until golden brown, about 2 minutes per side.",
-                "Repeat with the second tortilla.",
-                "Cut into wedges and serve with salsa and sour cream."
-            ]
-        },
-        // Add 9 more Mexican recipes here
-    ],
-    japanese: [
-        {
-            id: 1,
-            name: "Simple Miso Soup",
-            time: 15,
-            difficulty: "Easy",
-            servings: 2,
-            ingredients: [
-                "3 cups water",
-                "2 tsp dashi granules",
-                "2 tbsp miso paste",
-                "1/2 block silken tofu, cubed",
-                "1 green onion, thinly sliced",
-                "Wakame seaweed (optional)"
-            ],
-            instructions: [
-                "In a medium saucepan, bring water to a boil and add dashi granules.",
-                "Reduce heat to low and add tofu cubes.",
-                "In a small bowl, whisk miso paste with a little hot dashi broth until smooth.",
-                "Add miso mixture to the saucepan and stir gently.",
-                "Add wakame if using, and simmer for 1 minute.",
-                "Remove from heat and pour into bowls.",
-                "Garnish with sliced green onions and serve."
-            ]
-        },
-        // Add 9 more Japanese recipes here
-    ],
-    indian: [
-        {
-            id: 1,
-            name: "Quick Chicken Curry",
-            time: 30,
-            difficulty: "Medium",
-            servings: 2,
-            ingredients: [
-                "300g boneless chicken, cubed",
-                "1 onion, finely chopped",
-                "2 cloves garlic, minced",
-                "1 tbsp ginger, grated",
-                "2 tbsp curry powder",
-                "1 can (400ml) coconut milk",
-                "1 tbsp vegetable oil",
-                "Salt to taste",
-                "Cilantro for garnish"
-            ],
-            instructions: [
-                "Heat oil in a large pan over medium heat.",
-                "Add onion, garlic, and ginger. Cook until onion is translucent.",
-                "Add curry powder and cook for 1 minute until fragrant.",
-                "Add chicken and cook until it starts to brown.",
-                "Pour in coconut milk and bring to a simmer.",
-                "Cook for 15-20 minutes until chicken is cooked through and sauce thickens.",
-                "Season with salt, garnish with cilantro, and serve with rice."
-            ]
-        },
-        // Add 9 more Indian recipes here
-    ]
-};
+const mealsEl = document.getElementById("meals");
+const favoriteContainer = document.getElementById("fav-meals");
+const mealPopup = document.getElementById("meal-popup");
+const mealInfoEl = document.getElementById("meal-info");
+const popupCloseBtn = document.getElementById("close-popup");
 
-let currentCuisine = 'italian';
+const searchTerm = document.getElementById("search-term");
+const searchBtn = document.getElementById("search");
 
-function initApp() {
-    const cuisineButtons = document.querySelectorAll('.cuisine-btn');
-    cuisineButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            currentCuisine = button.dataset.cuisine;
-            updateActiveButton(button);
-            displayRecipeList(currentCuisine);
-        });
-    });
+getRandomMeal();
+fetchFavMeals();
 
-    displayRecipeList(currentCuisine);
+async function getRandomMeal() {
+  const resp = await fetch(
+    "https://www.themealdb.com/api/json/v1/1/random.php"
+  );
+  const respData = await resp.json();
+  const randomMeal = respData.meals[0];
+  addMeal(randomMeal, true);
 }
 
-function updateActiveButton(activeButton) {
-    document.querySelectorAll('.cuisine-btn').forEach(button => {
-        button.classList.remove('active');
-    });
-    activeButton.classList.add('active');
+async function getMealById(id) {
+  const resp = await fetch(
+    "https://www.themealdb.com/api/json/v1/1/lookup.php?i=" + id
+  );
+  const respData = await resp.json();
+  const meal = respData.meals[0];
+
+  return meal;
 }
 
-function displayRecipeList(cuisine) {
-    const recipeList = document.getElementById('recipe-list');
-    recipeList.innerHTML = '';
-
-    recipes[cuisine].forEach(recipe => {
-        const recipeItem = document.createElement('div');
-        recipeItem.classList.add('recipe-item');
-        recipeItem.innerHTML = `
-            <h3>${recipe.name}</h3>
-            <div class="recipe-info">
-                <span>Time: ${recipe.time} mins</span> | 
-                <span>Difficulty: ${recipe.difficulty}</span>
-            </div>
-        `;
-        recipeItem.addEventListener('click', () => displayRecipeDetails(recipe));
-        recipeList.appendChild(recipeItem);
-    });
+async function getMealsBySearch(term) {
+  const resp = await fetch(
+    "https://www.themealdb.com/api/json/v1/1/search.php?s=" + term
+  );
+  const respData = await resp.json();
+  const meals = respData.meals;
+  return meals;
 }
 
-function displayRecipeDetails(recipe) {
-    const recipeDetails = document.getElementById('recipe-details');
-    recipeDetails.innerHTML = `
-        <h2>${recipe.name}</h2>
-        <p><strong>Time:</strong> ${recipe.time} minutes</p>
-        <p><strong>Difficulty:</strong> ${recipe.difficulty}</p>
-        <p><strong>Servings:</strong> ${recipe.servings}</p>
-        <h3>Ingredients:</h3>
-        <ul>
-            ${recipe.ingredients.map(ingredient => `<li>${ingredient}</li>`).join('')}
-        </ul>
-        <h3>Instructions:</h3>
-        <ol>
-            ${recipe.instructions.map(step => `<li>${step}</li>`).join('')}
-        </ol>
+function addMeal(mealData, random = false) {
+  console.log(mealData);
+
+  const meal = document.createElement("div");
+  meal.classList.add("meal");
+
+  meal.innerHTML = `
+        <div class="meal-header">
+            ${
+              random
+                ? `
+            <span class="random"> Random Recipe </span>`
+                : ""
+            }
+            <img
+                src="${mealData.strMealThumb}"
+                alt="${mealData.strMeal}"
+            />
+        </div>
+        <div class="meal-body">
+            <h4>${mealData.strMeal}</h4>
+            <button class="fav-btn">
+                <i class="fas fa-heart"></i>
+            </button>
+        </div>
     `;
+
+  const btn = meal.querySelector(".meal-body .fav-btn");
+
+  btn.addEventListener("click", () => {
+    if (btn.classList.contains("active")) {
+      removeMealLS(mealData.idMeal);
+      btn.classList.remove("active");
+    } else {
+      addMealLS(mealData.idMeal);
+      btn.classList.add("active");
+    }
+
+    fetchFavMeals();
+  });
+
+  meal.addEventListener("click", () => {
+    showMealInfo(mealData);
+  });
+
+  mealsEl.appendChild(meal);
 }
 
-document.addEventListener('DOMContentLoaded', initApp);
+function addMealLS(mealId) {
+  const mealIds = getMealsLS();
+
+  localStorage.setItem("mealIds", JSON.stringify([...mealIds, mealId]));
+}
+
+function removeMealLS(mealId) {
+  const mealIds = getMealsLS();
+
+  localStorage.setItem(
+    "mealIds",
+    JSON.stringify(mealIds.filter((id) => id !== mealId))
+  );
+}
+
+function getMealsLS() {
+  const mealIds = JSON.parse(localStorage.getItem("mealIds"));
+
+  return mealIds === null ? [] : mealIds;
+}
+
+async function fetchFavMeals() {
+  //clean the container
+  favoriteContainer.innerHTML = "";
+
+  const mealIds = getMealsLS();
+
+  for (let i = 0; i < mealIds.length; i++) {
+    const mealId = mealIds[i];
+    meal = await getMealById(mealId);
+
+    addMealFav(meal);
+  }
+}
+
+function addMealFav(mealData) {
+  const favMeal = document.createElement("li");
+
+  favMeal.innerHTML = `
+    <img
+       src="${mealData.strMealThumb}"
+       alt="${mealData.strMeal}"
+    />
+    <span>${mealData.strMeal}</span>
+    <button class="clear"><i class="fas fa-window-close"></i></button>
+    `;
+
+  const btn = favMeal.querySelector(".clear");
+
+  btn.addEventListener("click", () => {
+    removeMealLS(mealData.idMeal);
+
+    fetchFavMeals();
+  });
+
+  favMeal.addEventListener("click", () => {
+    showMealInfo(mealData);
+  });
+
+  favoriteContainer.appendChild(favMeal);
+}
+
+function showMealInfo(mealData) {
+  //clean it up
+  mealInfoEl.innerHTML = "";
+
+  //update the Meal Info
+
+  const mealEl = document.createElement("div");
+
+  const ingredients = [];
+
+  for (let i = 1; i <= 20; i++) {
+    if (mealData["strIngredient" + i]) {
+      ingredients.push(
+        `${mealData["strIngredient" + i]} - ${mealData["strMeasure" + i]}`
+      );
+    } else {
+      break;
+    }
+  }
+
+  mealEl.innerHTML = `
+    <h1>${mealData.strMeal}</h1>
+    <img
+        src="${mealData.strMealThumb}"
+        alt="${mealData.strMeal}"
+    />
+
+    <p>
+      ${mealData.strInstructions}
+    </p>
+
+    <h3>Ingredients:</h3>
+    <ul>
+      ${ingredients
+        .map(
+          (ing) => `
+          <li>${ing}</li>
+          `
+        )
+        .join("")}
+    </ul>
+    `;
+
+  mealInfoEl.appendChild(mealEl);
+  mealPopup.classList.remove("hidden");
+}
+
+searchBtn.addEventListener("click", async () => {
+  //clean container
+  mealsEl.innerHTML = "";
+
+  const search = searchTerm.value;
+  const meals = await getMealsBySearch(search);
+
+  if (meals) {
+    meals.forEach((meal) => {
+      addMeal(meal);
+    });
+  }
+});
+
+popupCloseBtn.addEventListener("click", () => {
+  mealPopup.classList.add("hidden");
+});
